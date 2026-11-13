@@ -4,6 +4,7 @@ package com.tecsup.lab13animaciones
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
@@ -11,6 +12,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,6 +23,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -39,25 +42,30 @@ class MainActivity : ComponentActivity() {
 // MENU PRINCIPAL
 @Composable
 fun AppLaboratorio() {
-    var pantalla by remember { mutableStateOf(0) }
+    var pantalla by remember { mutableIntStateOf(0) }
 
     when (pantalla) {
         0 -> MenuPrincipal(
             abrirEjercicio1 = { pantalla = 1 },
             abrirEjercicio2 = { pantalla = 2 },
-            abrirEjercicio3 = { pantalla = 3 }
+            abrirEjercicio3 = { pantalla = 3 },
+            abrirEjercicio4 = { pantalla = 4 }
         )
+
         1 -> Ejercicio1(volver = { pantalla = 0 })
         2 -> Ejercicio2(volver = { pantalla = 0 })
         3 -> Ejercicio3(volver = { pantalla = 0 })
+        4 -> Ejercicio4(volver = { pantalla = 0 })
     }
 }
 
+// MENU DE EJERCICIOS
 @Composable
 fun MenuPrincipal(
     abrirEjercicio1: () -> Unit,
     abrirEjercicio2: () -> Unit,
-    abrirEjercicio3: () -> Unit
+    abrirEjercicio3: () -> Unit,
+    abrirEjercicio4: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -88,6 +96,12 @@ fun MenuPrincipal(
         Button(onClick = abrirEjercicio3) {
             Text("Ejercicio 3: Tamaño y Posicion")
         }
+
+        Spacer(modifier = Modifier.height(15.dp))
+
+        Button(onClick = abrirEjercicio4) {
+            Text("Ejercicio 4: Cambio de Contenido")
+        }
     }
 }
 
@@ -111,7 +125,10 @@ fun Ejercicio1(volver: () -> Unit) {
         Spacer(modifier = Modifier.height(30.dp))
 
         Button(onClick = { visible = !visible }) {
-            Text(if (visible) "Ocultar cuadro" else "Mostrar cuadro")
+            Text(
+                if (visible) "Ocultar cuadro"
+                else "Mostrar cuadro"
+            )
         }
 
         Spacer(modifier = Modifier.height(30.dp))
@@ -207,7 +224,6 @@ fun Ejercicio2(volver: () -> Unit) {
 // EJERCICIO 3: TAMAÑO Y POSICION
 @Composable
 fun Ejercicio3(volver: () -> Unit) {
-
     var mover by remember { mutableStateOf(false) }
 
     val tamaño by animateDpAsState(
@@ -229,7 +245,6 @@ fun Ejercicio3(volver: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-
         Text(
             text = "Ejercicio 3: Tamaño y Posicion",
             fontSize = 22.sp
@@ -264,6 +279,103 @@ fun Ejercicio3(volver: () -> Unit) {
         }
 
         Spacer(modifier = Modifier.height(20.dp))
+
+        Button(onClick = volver) {
+            Text("Volver al menu")
+        }
+    }
+}
+
+// EJERCICIO 4: ANIMATEDCONTENT
+@Composable
+fun Ejercicio4(volver: () -> Unit) {
+    var estado by remember { mutableStateOf("Cargando") }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "Ejercicio 4: AnimatedContent",
+            fontSize = 22.sp
+        )
+
+        Spacer(modifier = Modifier.height(30.dp))
+
+        AnimatedContent(
+            targetState = estado,
+            transitionSpec = {
+                fadeIn(
+                    animationSpec = tween(900)
+                ) togetherWith fadeOut(
+                    animationSpec = tween(400)
+                )
+            },
+            label = "CambioContenido"
+        ) { estadoActual ->
+
+            val color = when (estadoActual) {
+                "Cargando" -> Color(0xFF2196F3)
+                "Contenido" -> Color(0xFF4CAF50)
+                else -> Color(0xFFF44336)
+            }
+
+            val mensaje = when (estadoActual) {
+                "Cargando" -> "Cargando informacion..."
+                "Contenido" -> "Contenido cargado correctamente"
+                else -> "Error al cargar la informacion"
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .background(
+                        color,
+                        RoundedCornerShape(16.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = mensaje,
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(30.dp))
+
+        Button(
+            onClick = { estado = "Cargando" },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Cargando")
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Button(
+            onClick = { estado = "Contenido" },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Contenido")
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Button(
+            onClick = { estado = "Error" },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Error")
+        }
+
+        Spacer(modifier = Modifier.height(25.dp))
 
         Button(onClick = volver) {
             Text("Volver al menu")
