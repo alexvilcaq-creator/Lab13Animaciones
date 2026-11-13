@@ -1,3 +1,4 @@
+
 package com.tecsup.lab13animaciones
 
 import android.os.Bundle
@@ -5,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -37,31 +39,25 @@ class MainActivity : ComponentActivity() {
 // MENU PRINCIPAL
 @Composable
 fun AppLaboratorio() {
-
-    var pantalla by remember {
-        mutableStateOf(0)
-    }
+    var pantalla by remember { mutableStateOf(0) }
 
     when (pantalla) {
         0 -> MenuPrincipal(
             abrirEjercicio1 = { pantalla = 1 },
-            abrirEjercicio2 = { pantalla = 2 }
+            abrirEjercicio2 = { pantalla = 2 },
+            abrirEjercicio3 = { pantalla = 3 }
         )
-
-        1 -> Ejercicio1(
-            volver = { pantalla = 0 }
-        )
-
-        2 -> Ejercicio2(
-            volver = { pantalla = 0 }
-        )
+        1 -> Ejercicio1(volver = { pantalla = 0 })
+        2 -> Ejercicio2(volver = { pantalla = 0 })
+        3 -> Ejercicio3(volver = { pantalla = 0 })
     }
 }
 
 @Composable
 fun MenuPrincipal(
     abrirEjercicio1: () -> Unit,
-    abrirEjercicio2: () -> Unit
+    abrirEjercicio2: () -> Unit,
+    abrirEjercicio3: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -70,7 +66,6 @@ fun MenuPrincipal(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-
         Text(
             text = "Laboratorio 13: Animaciones",
             fontSize = 24.sp
@@ -87,16 +82,19 @@ fun MenuPrincipal(
         Button(onClick = abrirEjercicio2) {
             Text("Ejercicio 2: Cambio de Color")
         }
+
+        Spacer(modifier = Modifier.height(15.dp))
+
+        Button(onClick = abrirEjercicio3) {
+            Text("Ejercicio 3: Tamaño y Posicion")
+        }
     }
 }
 
-// EJERCICIO 1: ANIMATEDVISIBILITY
+// EJERCICIO 1: VISIBILIDAD
 @Composable
 fun Ejercicio1(volver: () -> Unit) {
-
-    var visible by remember {
-        mutableStateOf(false)
-    }
+    var visible by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -105,7 +103,6 @@ fun Ejercicio1(volver: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-
         Text(
             text = "Ejercicio 1: AnimatedVisibility",
             fontSize = 22.sp
@@ -113,27 +110,16 @@ fun Ejercicio1(volver: () -> Unit) {
 
         Spacer(modifier = Modifier.height(30.dp))
 
-        Button(
-            onClick = {
-                visible = !visible
-            }
-        ) {
-            Text(
-                if (visible) "Ocultar cuadro"
-                else "Mostrar cuadro"
-            )
+        Button(onClick = { visible = !visible }) {
+            Text(if (visible) "Ocultar cuadro" else "Mostrar cuadro")
         }
 
         Spacer(modifier = Modifier.height(30.dp))
 
         AnimatedVisibility(
             visible = visible,
-            enter = fadeIn(
-                animationSpec = tween(700)
-            ),
-            exit = fadeOut(
-                animationSpec = tween(700)
-            )
+            enter = fadeIn(animationSpec = tween(700)),
+            exit = fadeOut(animationSpec = tween(700))
         ) {
             Box(
                 modifier = Modifier
@@ -153,24 +139,14 @@ fun Ejercicio1(volver: () -> Unit) {
     }
 }
 
-// EJERCICIO 2: ANIMATECOLORASSTATE
+// EJERCICIO 2: CAMBIO DE COLOR
 @Composable
 fun Ejercicio2(volver: () -> Unit) {
-
-    var cambiarColor by remember {
-        mutableStateOf(false)
-    }
-
-    var usarSpring by remember {
-        mutableStateOf(false)
-    }
+    var cambiarColor by remember { mutableStateOf(false) }
+    var usarSpring by remember { mutableStateOf(false) }
 
     val colorAnimado by animateColorAsState(
-        targetValue = if (cambiarColor) {
-            Color.Green
-        } else {
-            Color.Blue
-        },
+        targetValue = if (cambiarColor) Color.Green else Color.Blue,
         animationSpec = if (usarSpring) {
             spring()
         } else {
@@ -186,7 +162,6 @@ fun Ejercicio2(volver: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-
         Text(
             text = "Ejercicio 2: Cambio de Color",
             fontSize = 22.sp
@@ -205,11 +180,7 @@ fun Ejercicio2(volver: () -> Unit) {
 
         Spacer(modifier = Modifier.height(30.dp))
 
-        Button(
-            onClick = {
-                cambiarColor = !cambiarColor
-            }
-        ) {
+        Button(onClick = { cambiarColor = !cambiarColor }) {
             Text(
                 if (cambiarColor) "Cambiar a azul"
                 else "Cambiar a verde"
@@ -218,11 +189,7 @@ fun Ejercicio2(volver: () -> Unit) {
 
         Spacer(modifier = Modifier.height(15.dp))
 
-        Button(
-            onClick = {
-                usarSpring = !usarSpring
-            }
-        ) {
+        Button(onClick = { usarSpring = !usarSpring }) {
             Text(
                 if (usarSpring) "Animacion: Spring"
                 else "Animacion: Tween"
@@ -237,3 +204,69 @@ fun Ejercicio2(volver: () -> Unit) {
     }
 }
 
+// EJERCICIO 3: TAMAÑO Y POSICION
+@Composable
+fun Ejercicio3(volver: () -> Unit) {
+
+    var mover by remember { mutableStateOf(false) }
+
+    val tamaño by animateDpAsState(
+        targetValue = if (mover) 180.dp else 100.dp,
+        animationSpec = tween(durationMillis = 800),
+        label = "AnimacionTamaño"
+    )
+
+    val posicionX by animateDpAsState(
+        targetValue = if (mover) 80.dp else (-80).dp,
+        animationSpec = tween(durationMillis = 800),
+        label = "AnimacionPosicion"
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+
+        Text(
+            text = "Ejercicio 3: Tamaño y Posicion",
+            fontSize = 22.sp
+        )
+
+        Spacer(modifier = Modifier.height(30.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(230.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .offset(x = posicionX)
+                    .size(tamaño)
+                    .background(
+                        Color(0xFF2196F3),
+                        RoundedCornerShape(12.dp)
+                    )
+            )
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Button(onClick = { mover = !mover }) {
+            Text(
+                if (mover) "Regresar cuadro"
+                else "Mover y agrandar"
+            )
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Button(onClick = volver) {
+            Text("Volver al menu")
+        }
+    }
+}
