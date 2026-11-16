@@ -60,13 +60,13 @@ class FishingNavigationTest {
         click("JUGAR · LANZAR LA AVENTURA")
         compose.onNodeWithText("LANZAR CAÑA").assertIsDisplayed().performTouchInput { click(center) }
         compose.mainClock.advanceTimeBy(4100)
-        compose.onNodeWithTag("IZQUIERDA").assertIsDisplayed()
+        compose.onNodeWithTag("dive-drag").assertIsDisplayed()
         compose.onNodeWithText("‹ Puerto").performTouchInput { click(center) };compose.mainClock.advanceTimeBy(600)
         compose.onNodeWithText("CANCELAR Y SALIR").performClick();compose.mainClock.advanceTimeBy(600)
         click("‹ Laboratorio")
         compose.onNodeWithText("Laboratorio 13: Animaciones").assertIsDisplayed()
     }
-    @Test fun heldDirectionReleasesOnCancelAndActivityPause() {
+    @Test fun dragReleasesOnCancelAndActivityPause() {
         compose.mainClock.autoAdvance=false
         click("Ejercicio Final: Fishing Legends")
         click("JUGAR · LANZAR LA AVENTURA")
@@ -76,11 +76,14 @@ class FishingNavigationTest {
             .config[androidx.compose.ui.semantics.SemanticsProperties.StateDescription]
             .substringAfter("x=").substringBefore(';').toDouble()
         val before=x()
-        compose.onNodeWithTag("DERECHA").performTouchInput { down(center) }
+        compose.onNodeWithTag("dive-drag").performTouchInput {
+            down(center)
+            moveBy(androidx.compose.ui.geometry.Offset(120f,0f))
+        }
         compose.mainClock.advanceTimeBy(150)
         val moved=x()
         org.junit.Assert.assertTrue(moved>before)
-        compose.onNodeWithTag("DERECHA").performTouchInput { cancel() }
+        compose.onNodeWithTag("dive-drag").performTouchInput { cancel() }
         compose.mainClock.advanceTimeBy(32)
         org.junit.Assert.assertEquals(moved,x(),.05)
         compose.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.STARTED)

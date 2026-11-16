@@ -20,14 +20,15 @@ import androidx.compose.ui.unit.dp
                         RodArt(rod,Modifier.size(90.dp))
                         Column(Modifier.weight(1f)) {
                             Text(rod.name,color=Cream,style=MaterialTheme.typography.titleMedium)
-                            Text("Hasta ${rod.depth} m · ayuda ${rod.id}/5",color=Mint,style=MaterialTheme.typography.bodySmall)
+                            Text("Hasta ${rod.depth} m · Nivel ${Progression.rodLevel(rod.id)}",color=Mint,style=MaterialTheme.typography.bodySmall)
+                            Text("Control ×${"%.1f".format(rod.control)} · Resistencia ×${"%.1f".format(rod.resistance)}\nRecogida ×${"%.1f".format(rod.reelSpeed)}",color=Cream,style=MaterialTheme.typography.bodySmall)
                             LinearProgressIndicator(progress={rod.depth/500f},modifier=Modifier.fillMaxWidth().padding(top=12.dp),color=Gold,trackColor=Night)
                         }
                     }
                     val owned=rod.id in progress.owned
                     val equipped=progress.equipped==rod.id
                     GameButton(when { equipped -> "EQUIPADA"; owned -> "EQUIPAR"; else -> "COMPRAR · ${rod.price} monedas" },
-                        Modifier.fillMaxWidth(),enabled=!equipped && (owned || (progress.coins>=rod.price && progress.level>=Progression.rodLevel(rod.id))),secondary=owned) { onRod(rod.id) }
+                        Modifier.fillMaxWidth(),enabled=!equipped && progress.level>=Progression.rodLevel(rod.id) && (owned || progress.coins>=rod.price),secondary=owned) { onRod(rod.id) }
                     if(!owned) Text("Requiere nivel ${Progression.rodLevel(rod.id)} · Tu nivel: ${progress.level}",color=Gold)
                     if(!owned && progress.coins<rod.price) Text("Te faltan ${rod.price-progress.coins} monedas",color=Mint,style=MaterialTheme.typography.bodySmall)
                 }

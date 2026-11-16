@@ -19,16 +19,25 @@ object FishingSaveCodec {
                 id to FishRecord(it.optInt("count").coerceAtLeast(0),it.optInt("best").coerceAtLeast(0))
             } }.toMap(),deepest=data.optInt("deepest",0).coerceIn(0,500),lastRewardToken=last,
             xp=data.optInt("xp",0).coerceAtLeast(0),
-            rewardTokens=((0 until receipts.length()).map { receipts.optString(it) }.toSet()+last)-"")
+            rewardTokens=((0 until receipts.length()).map { receipts.optString(it) }.toSet()+last)-"",
+            missionCatches=data.optInt("mission_catches",0).coerceAtLeast(0),
+            missionSpecies=readSet(data.optJSONArray("mission_species")),
+            missionDeepest=data.optInt("mission_deepest",0).coerceIn(0,500),
+            completedMissions=readSet(data.optJSONArray("completed_missions")))
     }.getOrDefault(Progress())
+
+    private fun readSet(array: JSONArray?): Set<String> =
+        if(array==null) emptySet() else (0 until array.length()).map { array.optString(it) }.filter { it.isNotBlank() }.toSet()
 
     fun encode(progress: Progress): String {
         val records=JSONObject()
         progress.records.forEach { (id,r) -> records.put(id,JSONObject().put("count",r.count).put("best",r.bestCm)) }
-        return JSONObject().put("version",2).put("coins",progress.coins).put("owned",progress.owned.joinToString(","))
+        return JSONObject().put("version",3).put("coins",progress.coins).put("owned",progress.owned.joinToString(","))
             .put("equipped",progress.equipped).put("deepest",progress.deepest).put("records",records)
             .put("reward_token",progress.lastRewardToken).put("reward_tokens",JSONArray((progress.rewardTokens+progress.lastRewardToken-"").sorted()))
-            .put("xp",progress.xp).put("level",progress.level).toString()
+             .put("xp",progress.xp).put("level",progress.level)
+            .put("mission_catches",progress.missionCatches).put("mission_species",JSONArray(progress.missionSpecies.sorted()))
+            .put("mission_deepest",progress.missionDeepest).put("completed_missions",JSONArray(progress.completedMissions.sorted())).toString()
     }
 }
 
@@ -41,7 +50,12 @@ class FishingStorage(context: Context, name: String = "fishing_legends_v1") {
     fun capture(catch: Catch): Boolean = synchronized(lock) {
         val current=load()
         val next=FishingLogic.reward(current,catch)
-        if(next==current) true else save(next)
+        save(next)
+    }
+    fun explore(depth: Int): Boolean = synchronized(lock) {
+        val current=load()
+        val next=FishingLogic.explore(current,depth)
+        save(next)
     }
     fun changeRod(id: Int): Boolean = synchronized(lock) {
         val current=load()
@@ -49,7 +63,10 @@ class FishingStorage(context: Context, name: String = "fishing_legends_v1") {
     }
     fun save(progress: Progress, token: String? = null): Boolean = synchronized(lock) {
         val current=load()
-        if(token!=null && (token==current.lastRewardToken || token in current.rewardTokens)) true
+        // A failed commit can still update SharedPreferences' in-memory cache. Recommit the
+        // current receipt on retry; its presence alone is not proof that disk writing succeeded.
+        if(token!=null && (token==current.lastRewardToken || token in current.rewardTokens))
+            prefs.edit().putString("progress",FishingSaveCodec.encode(current)).commit()
         else prefs.edit().putString("progress",FishingSaveCodec.encode(progress)).commit()
     }
     private companion object { val lock=Any() }

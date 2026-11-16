@@ -60,11 +60,15 @@ import kotlinx.coroutines.withContext
                     },::home)
                     GamePage.COLLECTION -> FishingCollection(progress,::home)
                     GamePage.ZONES -> FishingZones(progress,zoneId,{zoneId=it;page=GamePage.WATER},::home)
-                    GamePage.WATER -> FishingWater(progress,zones[zoneId],::home,{page=GamePage.COLLECTION}) { catch ->
+                    GamePage.WATER -> FishingWater(progress,zones[zoneId],::home,{page=GamePage.COLLECTION},award={ catch ->
                         val ok=withContext(Dispatchers.IO) { storage.capture(catch) }
                         if(ok)progress=storage.load() else error="No se pudo guardar la captura. Usa Reintentar guardado."
                         ok
-                    }
+                    },recordDepth={ depth ->
+                        val ok=withContext(Dispatchers.IO) { storage.explore(depth) }
+                        if(ok) progress=storage.load()
+                        ok
+                    })
                 }
             }
         }
@@ -95,6 +99,7 @@ import kotlinx.coroutines.withContext
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
                 Stat("CAPTURAS",progress.total.toString()); Stat("RÉCORD", "${progress.deepest} m"); Stat("ALCANCE","${progress.rod.depth} m")
             }
+            MissionBoard(progress)
         }
     }
 }

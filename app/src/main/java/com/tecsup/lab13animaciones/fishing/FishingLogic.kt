@@ -20,15 +20,33 @@ object FishingLogic {
         if (id in p.owned || p.coins < rod.price || p.level < Progression.rodLevel(id)) return p
         return p.copy(coins = p.coins - rod.price, owned = p.owned + id, equipped = id)
     }
-    fun equip(p: Progress, id: Int) = if (id in p.owned) p.copy(equipped = id) else p
+    fun equip(p: Progress, id: Int) = if (id in p.owned && (id==p.equipped || p.level>=Progression.rodLevel(id))) p.copy(equipped = id) else p
     fun targetWidth(fish: Fish, rod: Rod) = (.36f - fish.difficulty * .24f + rod.id * .012f).coerceIn(.14f,.42f)
     fun hit(position: Float, center: Float, width: Float) = abs(position - center) <= width / 2
+    fun visible(fish: Fish, zone: Zone, rod: Rod, level: Int) =
+        fish.zone==zone.id && fish.min<=minOf(zone.max,rod.depth) && level>=fish.requiredLevel
+    fun catchCoins(fish: Fish): Int = when(fish.special) {
+        FishSpecial.GOLD -> fish.value*2
+        FishSpecial.SECRET -> fish.value+80
+        FishSpecial.LEGENDARY -> fish.value+250
+        else -> fish.value
+    }
+    fun catchXp(fish: Fish): Int = Progression.catchXp(fish.rarity) * when(fish.special) {
+        FishSpecial.CRYSTAL -> 3
+        FishSpecial.LEGENDARY -> 2
+        else -> 1
+    }
+    fun explore(p: Progress, depth: Int): Progress = FishingMissions.settle(p.copy(
+        deepest=maxOf(p.deepest,depth.coerceIn(0,500)),
+        missionDeepest=maxOf(p.missionDeepest,depth.coerceIn(0,500))))
     fun reward(p: Progress, catch: Catch): Progress {
         if (catch.token.isBlank() || p.lastRewardToken == catch.token || catch.token in p.rewardTokens) return p
         val old = p.records[catch.fish.id] ?: FishRecord()
-        return p.copy(lastRewardToken = catch.token, rewardTokens = p.rewardTokens + p.lastRewardToken + catch.token - "",
-            xp = (p.xp.toLong() + Progression.catchXp(catch.fish.rarity)).coerceAtMost(Int.MAX_VALUE.toLong()).toInt(), coins = p.coins + catch.fish.value, deepest = maxOf(p.deepest, catch.depth),
-            records = p.records + (catch.fish.id to FishRecord(old.count + 1, maxOf(old.bestCm, catch.sizeCm))))
+        return FishingMissions.settle(p.copy(lastRewardToken = catch.token, rewardTokens = p.rewardTokens + p.lastRewardToken + catch.token - "",
+            xp = (p.xp.toLong() + catchXp(catch.fish)).coerceAtMost(Int.MAX_VALUE.toLong()).toInt(), coins = (p.coins.toLong() + catchCoins(catch.fish)).coerceAtMost(Int.MAX_VALUE.toLong()).toInt(), deepest = maxOf(p.deepest, catch.depth),
+            missionCatches = p.missionCatches+1, missionSpecies = p.missionSpecies+catch.fish.id,
+            missionDeepest = maxOf(p.missionDeepest,catch.depth),
+            records = p.records + (catch.fish.id to FishRecord(old.count + 1, maxOf(old.bestCm, catch.sizeCm)))))
     }
 }
 

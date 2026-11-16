@@ -9,6 +9,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -18,6 +19,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -55,10 +58,13 @@ import androidx.lifecycle.LifecycleEventObserver
 }
 
 @Composable fun FishingWater(progress: Progress, zone: Zone, back: () -> Unit, collection: () -> Unit,
-                             award: suspend (Catch) -> Boolean) {
-    val engine=remember(zone.id,progress.equipped) { FishingSimulation(zone,progress.rod) }
+                             award: suspend (Catch) -> Boolean, recordDepth: suspend (Int) -> Boolean = { true }) {
+    val engine=remember(zone.id,progress.equipped) { FishingSimulation(zone,progress.rod,playerLevel=progress.level) }
     var state by remember(engine) { mutableStateOf(engine.state) }
     var controls by remember { mutableStateOf(DiveControls()) }
+    var dragWidth by remember { mutableIntStateOf(1) }
+    var dragTarget by remember { mutableDoubleStateOf(50.0) }
+    val scope=rememberCoroutineScope()
     var confirmExit by remember { mutableStateOf(false) }
     var sessionOpen by rememberSaveable(zone.id,progress.equipped) { mutableStateOf(false) }
     var recreationNotice by remember { mutableStateOf(false) }
@@ -75,6 +81,12 @@ import androidx.lifecycle.LifecycleEventObserver
     var resumed by remember { mutableStateOf(lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED)==true) }
     val latestControls by rememberUpdatedState(controls)
     val latestAward by rememberUpdatedState(award)
+    val latestRecordDepth by rememberUpdatedState(recordDepth)
+    var depthSaveFailed by remember { mutableStateOf(false) }
+    // Checkpoints every ten metres; exact reached depth is committed on pause/result/exit.
+    LaunchedEffect((state.deepest/10).toInt(),state.phase==DivePhase.RESULTADO,resumed) {
+        if(state.deepest>0) depthSaveFailed=!latestRecordDepth(state.deepest.toInt())
+    }
     DisposableEffect(engine,lifecycle) {
         val observer=LifecycleEventObserver { _, _ ->
             resumed=lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED)==true
@@ -100,15 +112,26 @@ import androidx.lifecycle.LifecycleEventObserver
             if(latestAward(caught)) { savedToken=caught.token;sessionOpen=false } else saveFailed=true
         } finally { saving=false }
     }
+    fun leave() {
+        if(saving) return
+        controls=DiveControls();saving=true
+        scope.launch {
+            try {
+                if(latestRecordDepth(engine.state.deepest.toInt())) {
+                    engine.cancel();state=engine.state;sessionOpen=false;confirmExit=false;back()
+                } else depthSaveFailed=true
+            } finally { saving=false }
+        }
+    }
     fun requestExit() {
         controls=DiveControls()
         if(saving) return
-        if(state.active || (caught!=null && savedToken!=caught.token)) confirmExit=true else back()
+        if(state.active || (caught!=null && savedToken!=caught.token)) confirmExit=true else leave()
     }
     BackHandler { requestExit() }
     if(confirmExit) AlertDialog(onDismissRequest={confirmExit=false},
-        title={Text("¿Cancelar la sesión?")},text={Text("Volverás al puerto sin premios de esta sesión.")},
-        confirmButton={TextButton(onClick={engine.cancel();state=engine.state;sessionOpen=false;confirmExit=false;back()}) { Text("CANCELAR Y SALIR") }},
+        title={Text("¿Cancelar la sesión?")},text={Text("Se cancela la captura sin premiarla. Se conservarán el récord y los logros de exploración.")},
+        confirmButton={TextButton(enabled=!saving,onClick={leave()}) { Text("CANCELAR Y SALIR") }},
         dismissButton={TextButton(onClick={confirmExit=false}) { Text("SEGUIR PESCANDO") }})
     val accent by animateColorAsState(if(state.tension>.8) androidx.compose.ui.graphics.Color(0xFFF38A7E) else Mint,label="Tensión del hilo")
     val noticePadding by animateDpAsState(if(state.phase==DivePhase.ENGANCHADO)12.dp else 6.dp,label="Aviso de enganche")
@@ -118,7 +141,24 @@ import androidx.lifecycle.LifecycleEventObserver
             Text(zone.name,Modifier.weight(1f),color=Cream,fontSize=13.sp,lineHeight=19.sp)
             Text("Nv. ${progress.level} · ${progress.coins} M",color=Gold,fontSize=12.sp)
         }
-        Box(Modifier.fillMaxWidth().weight(1f).heightIn(min=120.dp)) {
+        val dragEnabled=resumed && !confirmExit && state.active && state.phase!=DivePhase.LANZANDO
+        Box(Modifier.fillMaxWidth().weight(1f).heightIn(min=120.dp).testTag("dive-drag")
+            .onSizeChanged { dragWidth=it.width.coerceAtLeast(1) }
+            .pointerInput(engine,dragEnabled) {
+                if(dragEnabled) {
+                    try {
+                        detectDragGestures(
+                            onDragStart={ dragTarget=engine.state.x;controls=controls.copy(targetX=dragTarget) },
+                            onDragEnd={ controls=controls.copy(targetX=null) },
+                            onDragCancel={ controls=controls.copy(targetX=null) }
+                        ) { change, amount ->
+                            change.consume()
+                            dragTarget=(dragTarget+amount.x/dragWidth*100).coerceIn(2.0,98.0)
+                            controls=controls.copy(targetX=dragTarget)
+                        }
+                    } finally { controls=controls.copy(targetX=null) }
+                }
+            }) {
             DiveScene(zone,progress.rod,state,Modifier.fillMaxSize())
             Text("${"%.1f".format(state.depth)} m / ${engine.maxDepth.toInt()} m",
                 Modifier.align(Alignment.TopEnd).testTag("dive-status").semantics { stateDescription="x=${state.x};depth=${state.depth}" }.padding(8.dp).background(Night.copy(.85f),MaterialTheme.shapes.medium).padding(8.dp),color=Cream)
@@ -142,16 +182,12 @@ import androidx.lifecycle.LifecycleEventObserver
                 if(recreationNotice) Text("Sesión cerrada al recrear la pantalla. Las capturas ya guardadas se conservan.",color=Mint,fontSize=12.sp,lineHeight=18.sp)
                 LevelProgress(progress)
                 GameButton("LANZAR CAÑA",Modifier.fillMaxWidth(),enabled=resumed && FishingLogic.available(zone,progress)) {
-                    engine.launch();state=engine.state;sessionOpen=true;recreationNotice=false;savedToken=null;saveFailed=false
+                    engine.launch(level=progress.level);state=engine.state;sessionOpen=true;recreationNotice=false;savedToken=null;saveFailed=false
                 }
-                Text("Mantén los controles para dirigir el anzuelo. La picada ocurre al tocar un pez.",color=Mint,fontSize=12.sp,lineHeight=18.sp)
+                Text("Arrastra sobre el agua para dirigir el anzuelo. Mantén RECOGER al enganchar un pez.",color=Mint,fontSize=12.sp,lineHeight=18.sp)
             }
-            if(state.active) {
-                Row(horizontalArrangement=Arrangement.spacedBy(10.dp)) {
-                    HoldControl("IZQUIERDA",resumed && !confirmExit && state.phase!=DivePhase.LANZANDO,Modifier.weight(1f)) { controls=controls.copy(left=it) }
-                    HoldControl("DERECHA",resumed && !confirmExit && state.phase!=DivePhase.LANZANDO,Modifier.weight(1f)) { controls=controls.copy(right=it) }
-                }
-            }
+            if(state.active) Text("ARRASTRA EN EL AGUA · Dedo o mouse presionado",color=Mint,fontSize=12.sp,lineHeight=18.sp)
+            if(depthSaveFailed) Text("No se pudo guardar el récord. Se reintentará al salir.",color=Gold,fontSize=12.sp)
             if(state.hooked!=null && state.phase!=DivePhase.RESULTADO) {
                 Text("${state.hooked!!.fish.name} · TENSIÓN ${(state.tension*100).toInt()} %",color=accent,lineHeight=22.sp)
                 LinearProgressIndicator(progress={state.tension.toFloat()},modifier=Modifier.fillMaxWidth().height(14.dp),color=accent,trackColor=Mint.copy(.2f))
@@ -161,7 +197,7 @@ import androidx.lifecycle.LifecycleEventObserver
                 caught?.let {
                     Row(verticalAlignment=Alignment.CenterVertically) {
                         FishArt(it.fish,Modifier.size(80.dp,56.dp))
-                        Text("${it.fish.name} · ${it.sizeCm} cm\n+${it.fish.value} monedas · +${Progression.catchXp(it.fish.rarity)} XP",
+                        Text("${it.fish.name} · ${it.sizeCm} cm\n+${FishingLogic.catchCoins(it.fish)} monedas · +${FishingLogic.catchXp(it.fish)} XP",
                             color=Gold,fontSize=14.sp,lineHeight=22.sp)
                     }
                     Text(if(savedToken==it.token)"Captura guardada" else if(saveFailed)"No se pudo guardar. Reintenta antes de salir." else "Guardando captura…",color=Mint)

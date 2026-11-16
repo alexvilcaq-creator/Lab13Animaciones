@@ -41,11 +41,11 @@ class FishingProgressTest {
         assertEquals(475,old.deepest);assertEquals(FishRecord(3,390),old.records["leviatan"])
         assertEquals(0,old.xp);assertEquals(1,old.level);assertTrue("old" in old.rewardTokens)
         assertEquals(old,FishingSaveCodec.decode(FishingSaveCodec.encode(old)))
-        val awarded=FishingLogic.reward(old,Catch("new",species.last(),450,410))
+        val awarded=FishingLogic.reward(old,Catch("new",species.first { it.id=="leviatan" },450,410))
         val restored=FishingSaveCodec.decode(FishingSaveCodec.encode(awarded))
-        assertEquals(awarded,restored);assertEquals(350,restored.xp)
-        assertEquals(restored,FishingLogic.reward(restored,Catch("old",species.last(),450,410)))
-        assertEquals(restored,FishingLogic.reward(restored,Catch("new",species.last(),450,410)))
+        assertEquals(awarded,restored);assertEquals(FishingLogic.catchXp(species.first { it.id=="leviatan" })+150,restored.xp)
+        assertEquals(restored,FishingLogic.reward(restored,Catch("old",species.first { it.id=="leviatan" },450,410)))
+        assertEquals(restored,FishingLogic.reward(restored,Catch("new",species.first { it.id=="leviatan" },450,410)))
     }
     @Test fun invalidFieldsAreSanitizedWithoutErasingOwnedEquipment() {
         val p=FishingSaveCodec.decode("""{"coins":-1,"owned":"0,4,99","equipped":99,"xp":-3,"deepest":999}""")

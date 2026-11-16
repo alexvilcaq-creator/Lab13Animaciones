@@ -41,12 +41,12 @@ class FishingLogicTest {
     }
     @Test fun capturePrecisionAndEquipmentBonuses() {
         assertTrue(FishingLogic.hit(.5f,.5f,.2f));assertFalse(FishingLogic.hit(.1f,.5f,.2f))
-        assertTrue(FishingLogic.targetWidth(species.first(),rods[0])>FishingLogic.targetWidth(species.last(),rods[0]))
-        assertTrue(FishingLogic.targetWidth(species.last(),rods[5])>FishingLogic.targetWidth(species.last(),rods[0]))
+        assertTrue(FishingLogic.targetWidth(species.first(),rods[0])>FishingLogic.targetWidth(species.first { it.id=="leviatan" },rods[0]))
+        assertTrue(FishingLogic.targetWidth(species.first { it.id=="leviatan" },rods[5])>FishingLogic.targetWidth(species.first { it.id=="leviatan" },rods[0]))
         assertFalse(FishingLogic.available(zones[1],rods[1]));assertTrue(FishingLogic.available(zones[1],rods[2]))
     }
     @Test fun catalogIsConsistentAndExpandable() {
-        assertEquals(12,species.size);assertEquals(species.size,species.map { it.id }.toSet().size)
+        assertEquals(16,species.size);assertEquals(species.size,species.map { it.id }.toSet().size)
         species.forEach { val z=zones[it.zone];assertTrue(it.min>z.min);assertTrue(it.max<=z.max);assertTrue(it.value>0) }
         assertEquals(listOf(0,150,400,900,1800,3500),rods.map { it.price })
         assertEquals(listOf(10,25,50,100,200,500),rods.map { it.depth })

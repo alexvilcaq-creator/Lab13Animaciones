@@ -50,6 +50,38 @@ fun DrawScope.drawFish(fish: Fish, at: Offset, length: Float, facing: Float = 1f
                 val r = l*(.58f+.05f*sin(time+i))
                 drawCircle(Color(0xFFFFE9AF).copy(.5f+.3f*sin(time+i)),l*.018f,Offset(cos(angle)*r,sin(angle)*r*.6f))
             }
+            when (fish.special) {
+                FishSpecial.GOLD -> {
+                    drawOval(Color(0xFFFFEF9A),Offset(-l*.37f,-h*.5f),Size(l*.82f,h),style=Stroke(l*.025f))
+                    repeat(3) { i ->
+                        val x=-l*.25f+i*l*.19f
+                        val y=-h*(.65f+.16f*sin(time+i))
+                        drawLine(Color(0xFFFFF5C1),Offset(x-l*.025f,y),Offset(x+l*.025f,y),l*.018f)
+                        drawLine(Color(0xFFFFF5C1),Offset(x,y-l*.025f),Offset(x,y+l*.025f),l*.018f)
+                    }
+                }
+                FishSpecial.CRYSTAL -> {
+                    val facet=Path().apply {
+                        moveTo(-l*.30f,0f);lineTo(-l*.08f,-h*.43f);lineTo(l*.17f,-h*.23f)
+                        lineTo(l*.28f,h*.15f);lineTo(-l*.05f,h*.43f);close()
+                    }
+                    drawPath(facet,Brush.linearGradient(listOf(Color.White.copy(.8f),Color(0xFF74C8F6).copy(.25f))))
+                    drawPath(facet,Color(0xFFE0FFFF),style=Stroke(l*.015f))
+                    drawLine(Color.White.copy(.8f),Offset(-l*.08f,-h*.43f),Offset(-l*.05f,h*.43f),l*.012f)
+                }
+                FishSpecial.SECRET -> {
+                    drawArc(Color(0xFFE1C5FF),210f,125f,false,Offset(-l*.24f,-h*.5f),Size(l*.36f,h*.8f),style=Stroke(l*.025f))
+                    repeat(3) { i -> drawCircle(Color(0xFFC5B6FF),l*.022f,Offset(-l*.28f+i*l*.14f,h*.08f)) }
+                }
+                FishSpecial.LEGENDARY -> {
+                    val crest=Path().apply {
+                        moveTo(-l*.12f,-h*.4f);lineTo(-l*.15f,-h*.9f);lineTo(0f,-h*.65f)
+                        lineTo(l*.10f,-h*1.1f);lineTo(l*.18f,-h*.42f);close()
+                    }
+                    drawPath(crest,Color(0xFFFFEAB0))
+                }
+                FishSpecial.NONE -> Unit
+            }
             if (fish.id == "linterna") {
                 drawLine(ink,Offset(l*.20f,-h*.3f),Offset(l*.33f,-h*.95f),l*.025f)
                 drawCircle(Color(0xFFC8FFE2),l*.06f,Offset(l*.33f,-h*.95f))

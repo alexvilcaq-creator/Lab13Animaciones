@@ -49,4 +49,57 @@ class FishingStorageTest {
         } finally { prefs.edit().clear().commit() }
     }
 
+    @Test fun explorationAndMissionRewardsPersistExactlyOnce() {
+        val context=InstrumentationRegistry.getInstrumentation().targetContext
+        val name="fishing_missions_test_only"
+        val prefs=context.getSharedPreferences(name,0)
+        prefs.edit().clear().commit()
+        try {
+            val storage=FishingStorage(context,name)
+            assertTrue(storage.explore(40))
+            repeat(5) { assertTrue(storage.capture(Catch("new-$it",species.first(),5,20))) }
+            val reopened=FishingStorage(context,name)
+            val before=reopened.load()
+            assertEquals(40,before.deepest)
+            assertEquals(5,before.missionCatches)
+            assertEquals(setOf("primeros_cinco","explorador_40"),before.completedMissions)
+            assertTrue(reopened.explore(40))
+            assertTrue(reopened.capture(Catch("new-0",species.first(),5,20)))
+            assertEquals(before,storage.load())
+        } finally { prefs.edit().clear().commit() }
+    }
+
+    @Test fun retryRecommitsReceiptEvenIfFailedWriteUpdatedMemory() {
+        val context=InstrumentationRegistry.getInstrumentation().targetContext
+        val name="fishing_commit_retry_test_only"
+        val real=context.getSharedPreferences(name,0)
+        real.edit().clear().commit()
+        var attempts=0
+        val wrapped=object : android.content.ContextWrapper(context) {
+            override fun getApplicationContext(): android.content.Context = this
+            override fun getSharedPreferences(n: String, mode: Int): android.content.SharedPreferences =
+                object : android.content.SharedPreferences by real {
+                    override fun edit(): android.content.SharedPreferences.Editor {
+                        val delegate=real.edit()
+                        return object : android.content.SharedPreferences.Editor by delegate {
+                            override fun commit(): Boolean {
+                                val ok=delegate.commit()
+                                attempts++
+                                return ok && attempts>1
+                            }
+                        }
+                    }
+                }
+        }
+        try {
+            val storage=FishingStorage(wrapped,name)
+            val caught=Catch("retry",species.first(),5,20)
+            assertFalse(storage.capture(caught))
+            assertTrue(storage.capture(caught))
+            assertEquals(2,attempts)
+            assertEquals(1,storage.load().total)
+            assertEquals(species.first().value,storage.load().coins)
+        } finally { real.edit().clear().commit() }
+    }
+
 }

@@ -4,14 +4,37 @@ package com.tecsup.lab13animaciones.fishing
 enum class Rarity(val title: String, val weight: Int) {
     COMMON("Común", 65), UNCOMMON("Poco común", 25), RARE("Raro", 9), LEGENDARY("Legendario", 1)
 }
-data class Rod(val id: Int, val name: String, val price: Int, val depth: Int, val color: Long)
+data class Rod(val id: Int, val name: String, val price: Int, val depth: Int, val color: Long) {
+    val control: Double get() = 1.0 + id * .10
+    val resistance: Double get() = 1.0 + id * .12
+    val reelSpeed: Double get() = 1.0 + id * .10
+}
+enum class FishBehavior(val title: String) {
+    CALM("Tranquilo"), FAST("Veloz"), SHY("Asustadizo"), HEAVY("Gigante"), LEGENDARY("Danza legendaria")
+}
+enum class FishSpecial(val title: String) {
+    NONE(""), GOLD("Dorado · monedas dobles"), CRYSTAL("Cristal · XP triple"),
+    SECRET("Secreto · tesoro oculto"), LEGENDARY("Legendario · botín aurora")
+}
 data class Zone(val id: Int, val name: String, val min: Int, val max: Int, val sky: Long, val water: Long)
 data class Fish(val id: String, val name: String, val zone: Int, val rarity: Rarity,
-                val min: Int, val max: Int, val value: Int, val sizeCm: Int, val difficulty: Float, val color: Long, val shape: Int)
+                val min: Int, val max: Int, val value: Int, val sizeCm: Int, val difficulty: Float, val color: Long, val shape: Int,
+                val behavior: FishBehavior = when {
+                    rarity == Rarity.LEGENDARY -> FishBehavior.LEGENDARY
+                    sizeCm >= 100 -> FishBehavior.HEAVY
+                    rarity == Rarity.RARE -> FishBehavior.SHY
+                    rarity == Rarity.UNCOMMON -> FishBehavior.FAST
+                    else -> FishBehavior.CALM
+                },
+                val special: FishSpecial = if(rarity==Rarity.LEGENDARY) FishSpecial.LEGENDARY else FishSpecial.NONE,
+                val requiredLevel: Int = 1)
 data class FishRecord(val count: Int = 0, val bestCm: Int = 0)
 data class Progress(val coins: Int = 0, val owned: Set<Int> = setOf(0), val equipped: Int = 0,
                     val records: Map<String, FishRecord> = emptyMap(), val deepest: Int = 0, val lastRewardToken: String = "",
-                    val xp: Int = 0, val rewardTokens: Set<String> = emptySet()) {
+                    val xp: Int = 0, val rewardTokens: Set<String> = emptySet(),
+                    val missionCatches: Int = 0,
+                    val missionSpecies: Set<String> = emptySet(), val missionDeepest: Int = 0,
+                    val completedMissions: Set<String> = emptySet()) {
     val level: Int get() = Progression.level(xp)
     val rod: Rod get() = rods.first { it.id == equipped }
     val total: Int get() = records.values.sumOf { it.count }
@@ -40,4 +63,12 @@ val species = listOf(
     Fish("vela","Pez vela rubí",2,Rarity.RARE,160,200,340,160,.60f,0xFFE980A7,1),
     Fish("linterna","Pez linterna",3,Rarity.COMMON,201,500,200,48,.42f,0xFF75DBCD,2),
     Fish("dragon","Dragón abisal",3,Rarity.RARE,280,500,600,190,.68f,0xFFB392EE,3),
-    Fish("leviatan","Leviatán aurora",3,Rarity.LEGENDARY,400,500,1400,350,.80f,0xFFFFD276,1))
+    Fish("leviatan","Leviatán aurora",3,Rarity.LEGENDARY,400,500,1400,350,.80f,0xFFFFD276,1),
+    Fish("koi_sol","Koi del sol",0,Rarity.UNCOMMON,2,25,45,28,.28f,0xFFFFD35B,2,
+        behavior=FishBehavior.CALM,special=FishSpecial.GOLD),
+    Fish("tetra_cristal","Tetra de cristal",0,Rarity.RARE,6,25,60,22,.36f,0xFFABF0FF,2,
+        behavior=FishBehavior.SHY,special=FishSpecial.CRYSTAL,requiredLevel=3),
+    Fish("sombra_raiz","Sombra de las raíces",1,Rarity.RARE,42,100,180,74,.56f,0xFFA797DF,3,
+        behavior=FishBehavior.SHY,special=FishSpecial.SECRET,requiredLevel=8),
+    Fish("fenix_marea","Fénix de marea",2,Rarity.LEGENDARY,175,200,420,115,.72f,0xFFFFAC89,1,
+        behavior=FishBehavior.LEGENDARY,special=FishSpecial.LEGENDARY,requiredLevel=20))

@@ -34,6 +34,8 @@ import androidx.compose.ui.unit.dp
                         Column(Modifier.weight(1f)) {
                             Text(if(record==null)"Sin descubrir" else fish.name,color=Cream,style=MaterialTheme.typography.titleMedium)
                             Text(fish.rarity.title,color=rarityColor(fish.rarity))
+                            if(fish.special!=FishSpecial.NONE) Text(fish.special.title,color=Gold,style=MaterialTheme.typography.bodySmall)
+                            Text("${fish.behavior.title} · Nivel ${fish.requiredLevel}",color=Mint,style=MaterialTheme.typography.bodySmall)
                             Text("${zones[fish.zone].name} · ${fish.min}–${fish.max} m",color=Mint,style=MaterialTheme.typography.bodySmall)
                             Text(if(record==null)"Busca su silueta en el agua" else "${record.count} capturas · Mejor: ${record.bestCm} cm",color=Cream,style=MaterialTheme.typography.bodySmall)
                         }

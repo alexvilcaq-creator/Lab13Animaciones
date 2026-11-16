@@ -61,10 +61,10 @@ class FishingSimulationTest {
         assertEquals(later,FishingLogic.reward(later,caught))
     }
     @Test fun sustainedOverloadEscapesAndControlledReelingCanLandLegendaryFish() {
-        val escape=engine(species.last(),440.0,rods.last());hook(escape)
+        val escape=engine(species.first { it.id=="leviatan" },440.0,rods.last());hook(escape)
         escape.advance(5.0,DiveControls(reel=true))
         assertEquals(DivePhase.RESULTADO,escape.state.phase);assertNull(escape.state.catch)
-        val land=engine(species.last(),440.0,rods.last());hook(land)
+        val land=engine(species.first { it.id=="leviatan" },440.0,rods.last());hook(land)
         var holding=true
         repeat(5000) {
             if(land.state.tension>.8) holding=false
@@ -84,7 +84,7 @@ class FishingSimulationTest {
         assertEquals(fast.depth,slow.depth,1e-8);assertEquals(fast.depth,medium.depth,1e-8)
         assertEquals(fast.x,slow.x,1e-8)
         fun struggle(dt: Double,n: Int): DiveState {
-            val e=engine(species.last(),440.0,rods.last());hook(e)
+            val e=engine(species.first { it.id=="leviatan" },440.0,rods.last());hook(e)
             repeat(n) { e.advance(dt,DiveControls(reel=true)) };return e.state
         }
         val a=struggle(1.0/120,240);val b=struggle(.5,4)
