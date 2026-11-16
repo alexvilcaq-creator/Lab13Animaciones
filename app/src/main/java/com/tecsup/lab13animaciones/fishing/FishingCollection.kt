@@ -50,13 +50,13 @@ import androidx.compose.ui.unit.dp
         TitleBlock("Explora", "Cuatro mundos por descubrir", "Tu equipo alcanza ${progress.rod.depth} metros")
         LazyColumn(verticalArrangement=Arrangement.spacedBy(14.dp),contentPadding=PaddingValues(vertical=20.dp)) {
             items(zones,key={it.id}) { z ->
-                val open=FishingLogic.available(z,progress.rod)
+                val open=FishingLogic.available(z,progress)
                 GameCard(Modifier.fillMaxWidth()) {
                     FishingScene(z,progress.rod,FishingPhase.IDLE,0f,0f,0f,null,Modifier.fillMaxWidth().height(140.dp))
                     Spacer(Modifier.height(10.dp))
                     Text(z.name,color=Cream,style=MaterialTheme.typography.titleLarge)
                     Text("${z.min}–${z.max} m · ${species.count { it.zone==z.id }} especies",color=Mint)
-                    GameButton(if(!open)"REQUIERE MÁS DE ${z.min} m" else if(selected==z.id)"ZONA ACTUAL · PESCAR" else "EXPLORAR",
+                    GameButton(if(!open)"NIVEL ${Progression.zoneLevel(z.id)} · MÁS DE ${z.min} m" else if(selected==z.id)"ZONA ACTUAL · PESCAR" else "EXPLORAR",
                         Modifier.fillMaxWidth().padding(top=10.dp),enabled=open) { choose(z.id) }
                 }
             }

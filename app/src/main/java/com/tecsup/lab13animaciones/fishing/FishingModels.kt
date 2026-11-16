@@ -10,7 +10,9 @@ data class Fish(val id: String, val name: String, val zone: Int, val rarity: Rar
                 val min: Int, val max: Int, val value: Int, val sizeCm: Int, val difficulty: Float, val color: Long, val shape: Int)
 data class FishRecord(val count: Int = 0, val bestCm: Int = 0)
 data class Progress(val coins: Int = 0, val owned: Set<Int> = setOf(0), val equipped: Int = 0,
-                    val records: Map<String, FishRecord> = emptyMap(), val deepest: Int = 0, val lastRewardToken: String = "") {
+                    val records: Map<String, FishRecord> = emptyMap(), val deepest: Int = 0, val lastRewardToken: String = "",
+                    val xp: Int = 0, val rewardTokens: Set<String> = emptySet()) {
+    val level: Int get() = Progression.level(xp)
     val rod: Rod get() = rods.first { it.id == equipped }
     val total: Int get() = records.values.sumOf { it.count }
 }

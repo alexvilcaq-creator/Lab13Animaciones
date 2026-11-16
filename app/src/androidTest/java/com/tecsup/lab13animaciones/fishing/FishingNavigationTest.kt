@@ -60,9 +60,40 @@ class FishingNavigationTest {
         click("JUGAR · LANZAR LA AVENTURA")
         compose.onNodeWithText("LANZAR CAÑA").assertIsDisplayed().performTouchInput { click(center) }
         compose.mainClock.advanceTimeBy(4100)
-        compose.onNodeWithText("ATRAPAR").assertIsDisplayed()
+        compose.onNodeWithTag("IZQUIERDA").assertIsDisplayed()
         compose.onNodeWithText("‹ Puerto").performTouchInput { click(center) };compose.mainClock.advanceTimeBy(600)
+        compose.onNodeWithText("CANCELAR Y SALIR").performClick();compose.mainClock.advanceTimeBy(600)
         click("‹ Laboratorio")
         compose.onNodeWithText("Laboratorio 13: Animaciones").assertIsDisplayed()
     }
+    @Test fun heldDirectionReleasesOnCancelAndActivityPause() {
+        compose.mainClock.autoAdvance=false
+        click("Ejercicio Final: Fishing Legends")
+        click("JUGAR · LANZAR LA AVENTURA")
+        compose.onNodeWithText("LANZAR CAÑA").performClick()
+        compose.mainClock.advanceTimeBy(950)
+        fun x(): Double = compose.onNodeWithTag("dive-status").fetchSemanticsNode()
+            .config[androidx.compose.ui.semantics.SemanticsProperties.StateDescription]
+            .substringAfter("x=").substringBefore(';').toDouble()
+        val before=x()
+        compose.onNodeWithTag("DERECHA").performTouchInput { down(center) }
+        compose.mainClock.advanceTimeBy(150)
+        val moved=x()
+        org.junit.Assert.assertTrue(moved>before)
+        compose.onNodeWithTag("DERECHA").performTouchInput { cancel() }
+        compose.mainClock.advanceTimeBy(32)
+        org.junit.Assert.assertEquals(moved,x(),.05)
+        compose.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.STARTED)
+        compose.mainClock.advanceTimeBy(1000)
+        val paused=x()
+        org.junit.Assert.assertEquals(moved,paused,.05)
+        compose.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
+        compose.mainClock.advanceTimeBy(32)
+        org.junit.Assert.assertEquals(paused,x(),.05)
+        compose.activityRule.scenario.recreate()
+        compose.mainClock.advanceTimeBy(600)
+        compose.onNodeWithText("LANZAR CAÑA").assertIsDisplayed()
+        org.junit.Assert.assertEquals(50.0,x(),.05)
+    }
+
 }

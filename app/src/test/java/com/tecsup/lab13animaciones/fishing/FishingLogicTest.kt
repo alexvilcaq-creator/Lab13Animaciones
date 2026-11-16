@@ -6,7 +6,7 @@ import kotlin.random.Random
 
 class FishingLogicTest {
     @Test fun purchasesAreAffordableUniqueAndEquippable() {
-        val initial=Progress(coins=500)
+        val initial=Progress(coins=500,xp=Progression.threshold(8))
         val bought=FishingLogic.buy(initial,2)
         assertEquals(100,bought.coins);assertEquals(2,bought.equipped);assertTrue(2 in bought.owned)
         assertEquals(bought,FishingLogic.buy(bought,2))

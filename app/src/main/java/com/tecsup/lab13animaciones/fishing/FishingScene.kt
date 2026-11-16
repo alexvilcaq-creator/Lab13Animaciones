@@ -67,11 +67,10 @@ fun DrawScope.drawFish(fish: Fish, at: Offset, length: Float, facing: Float = 1f
 }
 
 @Composable fun FishingScene(zone: Zone, rod: Rod, phase: FishingPhase, cast: Float, descent: Float,
-                             reel: Float, catch: Catch?, modifier: Modifier = Modifier, targetDepth: Int = minOf(zone.max,rod.depth)) {
-    val clock = rememberInfiniteTransition(label="Lago vivo")
-    val cycle by clock.animateFloat(0f,1f,infiniteRepeatable(tween(60000,easing=LinearEasing)),label="Tiempo del paisaje")
+                             reel: Float, catch: Catch?, modifier: Modifier = Modifier, targetDepth: Int = minOf(zone.max,rod.depth), showFish: Boolean = true, externalTime: Float? = null) {
     var elapsed by remember { mutableFloatStateOf(0f) }
-    LaunchedEffect(Unit) {
+    LaunchedEffect(externalTime == null) {
+        if (externalTime != null) return@LaunchedEffect
         var previous = withFrameNanos { it }
         while (true) {
             val now = withFrameNanos { it }
@@ -79,10 +78,12 @@ fun DrawScope.drawFish(fish: Fish, at: Offset, length: Float, facing: Float = 1f
             previous = now
         }
     }
+    val sceneTime = externalTime ?: elapsed
+    val cycle = (sceneTime / 60f) % 1f
     val ambience by androidx.compose.animation.animateColorAsState(Color(zone.water),tween(900),label="Ambiente de profundidad")
     Canvas(modifier.clipToBounds().semantics { contentDescription = "Escena de ${zone.name}: pescador, barco y peces bajo el agua" }) {
         val w = size.width; val h = size.height; val water = h*.32f
-        val seconds = elapsed; val wave = sin(seconds*2f)*h*.004f
+        val seconds = sceneTime; val wave = sin(seconds*2f)*h*.004f
         drawRect(Brush.verticalGradient(listOf(Color(zone.sky),Color(0xFFF4EBCF)),endY=water))
         drawCircle(Color(0xFFFFE7A4),w*.065f,Offset(w*.80f,h*.09f))
         repeat(4) { i ->
@@ -122,7 +123,7 @@ fun DrawScope.drawFish(fish: Fish, at: Offset, length: Float, facing: Float = 1f
             drawCircle(Color(0xFFCDFFF5).copy(.26f),w*(.003f+i%3*.002f),Offset(x,y),style=Stroke(w*.002f))
         }
         val minDepth=zone.min+1; val maxDepth=minOf(zone.max,rod.depth)
-        val visible=species.filter { it.zone==zone.id && it.min<=maxDepth }
+        val visible=species.filter { showFish && it.zone==zone.id && it.min<=maxDepth }
         visible.forEachIndexed { index, fish ->
             repeat(if(fish.rarity==Rarity.COMMON)3 else 1) { n ->
                 val direction=if((index+n)%2==0)1f else -1f

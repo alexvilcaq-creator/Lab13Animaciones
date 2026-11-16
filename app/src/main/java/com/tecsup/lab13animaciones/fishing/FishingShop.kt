@@ -27,7 +27,8 @@ import androidx.compose.ui.unit.dp
                     val owned=rod.id in progress.owned
                     val equipped=progress.equipped==rod.id
                     GameButton(when { equipped -> "EQUIPADA"; owned -> "EQUIPAR"; else -> "COMPRAR · ${rod.price} monedas" },
-                        Modifier.fillMaxWidth(),enabled=!equipped && (owned || progress.coins>=rod.price),secondary=owned) { onRod(rod.id) }
+                        Modifier.fillMaxWidth(),enabled=!equipped && (owned || (progress.coins>=rod.price && progress.level>=Progression.rodLevel(rod.id))),secondary=owned) { onRod(rod.id) }
+                    if(!owned) Text("Requiere nivel ${Progression.rodLevel(rod.id)} · Tu nivel: ${progress.level}",color=Gold)
                     if(!owned && progress.coins<rod.price) Text("Te faltan ${rod.price-progress.coins} monedas",color=Mint,style=MaterialTheme.typography.bodySmall)
                 }
             }
