@@ -173,6 +173,8 @@ import androidx.lifecycle.LifecycleEventObserver
                     DivePhase.PREPARADO -> "PREPARADO · ${progress.rod.name}"
                     DivePhase.LANZANDO -> "LANZANDO · Entrada al agua"
                     DivePhase.DESCENDIENDO -> if(state.depth>=engine.maxDepth-.01)"Límite de la caña · Explora a los lados" else "DESCENDIENDO · Busca contacto con un pez"
+                    DivePhase.DETENIDO -> if(state.depth>=engine.maxDepth-.01)"PROFUNDIDAD MÁXIMA · EXPLORAR" else "DESCENSO DETENIDO · Explora a los lados"
+                    DivePhase.REGRESANDO_VACIO -> "RECOGIENDO CAÑA · Regreso al barco"
                     DivePhase.ENGANCHADO -> "ENGANCHADO · Suelta para aliviar la tensión"
                     DivePhase.RECOGIENDO -> "RECOGIENDO · Evita mantener el 100 %"
                     DivePhase.RESULTADO -> state.message
@@ -186,10 +188,26 @@ import androidx.lifecycle.LifecycleEventObserver
                 }
                 Text("Arrastra sobre el agua para dirigir el anzuelo. Mantén RECOGER al enganchar un pez.",color=Mint,fontSize=12.sp,lineHeight=18.sp)
             }
+            if(state.phase==DivePhase.DESCENDIENDO || state.phase==DivePhase.DETENIDO) {
+                if(state.message.contains("escapó")) Text(state.message,color=Gold,fontSize=14.sp,lineHeight=21.sp)
+                if(state.phase==DivePhase.DESCENDIENDO) {
+                    GameButton("DETENER DESCENSO",Modifier.fillMaxWidth(),enabled=resumed && !confirmExit) {
+                        engine.pauseDescent();state=engine.state
+                    }
+                } else if(state.depth<engine.maxDepth-.01) {
+                    GameButton("SEGUIR BAJANDO",Modifier.fillMaxWidth(),enabled=resumed && !confirmExit) {
+                        engine.resumeDescent();state=engine.state
+                    }
+                } else Text("EXPLORAR · Arrastra horizontalmente o vuelve al barco",color=Mint,fontSize=13.sp,lineHeight=20.sp)
+                GameButton("RECOGER CAÑA",Modifier.fillMaxWidth(),enabled=resumed && !confirmExit) {
+                    controls=controls.copy(reel=false)
+                    engine.recall();state=engine.state
+                }
+            }
             if(state.active) Text("ARRASTRA EN EL AGUA · Dedo o mouse presionado",color=Mint,fontSize=12.sp,lineHeight=18.sp)
             if(depthSaveFailed) Text("No se pudo guardar el récord. Se reintentará al salir.",color=Gold,fontSize=12.sp)
             if(state.hooked!=null && state.phase!=DivePhase.RESULTADO) {
-                Text("${state.hooked!!.fish.name} · TENSIÓN ${(state.tension*100).toInt()} %",color=accent,lineHeight=22.sp)
+                Text("ENGANCHADO: ${state.hooked!!.fish.name} · TENSIÓN ${(state.tension*100).toInt()} %",color=accent,lineHeight=22.sp)
                 LinearProgressIndicator(progress={state.tension.toFloat()},modifier=Modifier.fillMaxWidth().height(14.dp),color=accent,trackColor=Mint.copy(.2f))
                 HoldControl("RECOGER",resumed && !confirmExit,Modifier.fillMaxWidth()) { controls=controls.copy(reel=it) }
             }
@@ -206,6 +224,7 @@ import androidx.lifecycle.LifecycleEventObserver
                 GameButton("PESCAR DE NUEVO",Modifier.fillMaxWidth(),enabled=caught==null || savedToken==caught.token) {
                     engine.cancel();state=engine.state;sessionOpen=false;controls=DiveControls()
                 }
+                GameButton("VOLVER AL BARCO",Modifier.fillMaxWidth(),enabled=!saving && (caught==null || savedToken==caught.token),secondary=true) { leave() }
                 if(caught!=null && savedToken==caught.token) TextButton(onClick=collection) { Text("VER COLECCIÓN",color=Gold) }
             }
         }

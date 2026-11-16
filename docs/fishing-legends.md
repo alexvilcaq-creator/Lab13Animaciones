@@ -2,7 +2,12 @@
 
 ## Controles y simulación
 
-El anzuelo desciende automáticamente. Arrastra horizontalmente dentro de la escena del agua,
+El anzuelo desciende automáticamente. DETENER DESCENSO conserva la profundidad mientras sigues
+explorando; SEGUIR BAJANDO lo reanuda. En el límite se detiene automáticamente y permite explorar
+horizontalmente. RECOGER CAÑA inicia el regreso vacío automático hasta la superficie, sin enganchar
+nuevos peces durante la subida. Desde el resultado, VOLVER AL BARCO abre el puerto.
+
+Arrastra horizontalmente dentro de la escena del agua,
 con el dedo o con el botón izquierdo del mouse presionado. El arrastre desplaza un objetivo
 relativo al anzuelo: no salta a la posición inicial del toque. Un controlador suavizado limita
 su velocidad según la caña y mantiene X entre 2 y 98 de un mundo de 100 unidades.
@@ -16,14 +21,23 @@ relativa entre pez y anzuelo elige el primer contacto y engancha un solo pez. Pe
 usan las mismas coordenadas de mundo para movimiento y dibujo, con cámara vertical.
 El límite de profundidad es siempre el mínimo entre el alcance de la caña y el de la zona.
 
-Los comunes nadan normalmente. Los veloces cambian de dirección cada 1,6–2,3 segundos.
-Los asustadizos detectan el anzuelo a 14 unidades horizontales/4 metros verticales; huyen
-0,8 segundos y descansan hasta 3,6 segundos desde la detección. Nunca desaparecen por miedo.
+Los comunes nadan despacio (2–3,2 unidades/s). Los poco comunes veloces cambian su dirección
+objetivo ocasionalmente, cada 3,5–5 segundos, con aceleración limitada: no invierten su velocidad
+instantáneamente. Los raros detectan el anzuelo a 16 unidades horizontales/4,5 metros verticales,
+pero esperan 0,55 segundos antes de huir. Dorados y secretos reaccionan en 0,4 segundos.
+Si el anzuelo se aleja durante la reacción, se cancela la huida. La velocidad de escape se reduce
+a 1,15 veces la de crucero, limitada a 5,5 unidades/s (6,5 para especiales), muy por debajo del
+control de madera del jugador (28 unidades/s). Las huidas duran 0,65/0,85 segundos y tienen un
+periodo de descanso de 4,8 segundos desde el inicio. No desaparecen por miedo.
+
 Los gigantes son más lentos; su tamaño aumenta la resistencia al recogerlos. Los legendarios
-bailan horizontalmente y oscilan en profundidad, dentro del rango legal de su especie.
+bailan con movimientos acotados también en vertical, sin saltar de posición. Los giros de pared
+se anticipan y no reflejan al pez a otra posición. La colisión barrida incluye un pequeño margen
+para la punta del anzuelo y sigue rechazando peces realmente alejados.
 
 Mantener RECOGER eleva el pez y la tensión; soltar reduce la tensión y permite retroceso.
-Permanecer 1,2 segundos al 100 % rompe el hilo. La captura conserva el tamaño real del ejemplar
+Permanecer 1,2 segundos al 100 % hace escapar al pez: el anzuelo queda vacío a esa profundidad,
+con opciones de seguir explorando o recoger sin premios de captura. La captura conserva el tamaño real del ejemplar
 que nadaba en el escenario. Cada lance tiene un recibo único y los premios son idempotentes.
 
 Pausar libera todos los controles y congela el reloj. Reanudar exige un gesto nuevo.
@@ -95,11 +109,13 @@ En Android Studio, actualizar `feature/fishing-legends`, sincronizar Gradle y ej
 en Pixel 6/API 34. Verificar:
 
 1. Abrir el laboratorio, sus cuatro ejercicios, tienda, colección y zonas.
-2. Lanzar y arrastrar con clic izquierdo sobre el agua: movimiento suave, límites laterales,
+2. Lanzar, detener y reanudar el descenso; en el límite explorar o recoger. Probar también la
+   recogida sin captura y VOLVER AL BARCO. Arrastrar con clic izquierdo sobre el agua: movimiento suave, límites laterales,
    descenso automático y cámara. Puerto debe seguir respondiendo.
 3. En dispositivo táctil, arrastrar con un dedo y mantener RECOGER con otro; cancelar gestos.
    Con mouse, dirigir, soltar y mantener RECOGER. Observar tensión y lucha del pez.
-4. Perseguir peces asustadizos, observar giros de rápidos y la danza legendaria sin huidas perpetuas.
+4. Perseguir peces asustadizos: comprobar demora de reacción, giros suaves y velocidad menor.
+   Provocar un escape con tensión y recoger el anzuelo vacío hasta el barco.
 5. Comprobar las cuatro nuevas especies según sus condiciones, sus efectos y sus premios.
 6. Revisar estadísticas de cañas y rechazos de compras/equipamiento/zonas sin nivel o alcance.
 7. Completar misiones, salir y reabrir: no debe repetirse el premio. Descender sin capturar y
@@ -108,32 +124,23 @@ en Pixel 6/API 34. Verificar:
 9. Ejecutar `:app:connectedDebugAndroidTest` con dispositivo conectado para las pruebas de UI
    y SharedPreferences. Compilar el APK de pruebas no equivale a ejecutarlas.
 
-## Validación en la nube
+## Validación de los controles de sesión
 
 `assembleDebug`, `testDebugUnitTest`, `lintDebug` y `assembleDebugAndroidTest`: correctos.
-30 pruebas JVM ejecutadas: 0 fallos, 0 errores, 0 omitidas. Lint: 0 errores y 13 advertencias.
-No se ejecutaron las pruebas instrumentadas: esta instancia no dispone de emulador operativo
-ni /dev/kvm. La interacción real con mouse y el aspecto en Pixel 6/API 34 quedan pendientes
-de la comprobación manual descrita arriba.
+37 pruebas JVM ejecutadas: 0 fallos, 0 errores, 0 omitidas.
+Lint: 0 errores y 14 advertencias.
+Las pruebas cubren pausa/reanudación del descenso, exploración al límite, colisiones en pausa,
+regreso vacío sin nuevas picadas, captura y escape seguido de recogida vacía, FPS y reacción gradual.
+La prueba instrumentada del regreso al barco se compiló, pero no se ejecutó: no hay emulador
+operativo en esta instancia. Comprobar los botones y los gestos en Pixel 6/API 34.
 
-## Archivos de esta mejora
+## Archivos de este ajuste
 
 - `app/src/androidTest/java/com/tecsup/lab13animaciones/fishing/FishingNavigationTest.kt`
-- `app/src/androidTest/java/com/tecsup/lab13animaciones/fishing/FishingStorageTest.kt`
 - `app/src/main/java/com/tecsup/lab13animaciones/fishing/FishMotion.kt`
-- `app/src/main/java/com/tecsup/lab13animaciones/fishing/FishingCollection.kt`
-- `app/src/main/java/com/tecsup/lab13animaciones/fishing/FishingGame.kt`
-- `app/src/main/java/com/tecsup/lab13animaciones/fishing/FishingLogic.kt`
-- `app/src/main/java/com/tecsup/lab13animaciones/fishing/FishingMissions.kt`
-- `app/src/main/java/com/tecsup/lab13animaciones/fishing/FishingModels.kt`
-- `app/src/main/java/com/tecsup/lab13animaciones/fishing/FishingScene.kt`
-- `app/src/main/java/com/tecsup/lab13animaciones/fishing/FishingShop.kt`
 - `app/src/main/java/com/tecsup/lab13animaciones/fishing/FishingSimulation.kt`
-- `app/src/main/java/com/tecsup/lab13animaciones/fishing/FishingStorage.kt`
 - `app/src/main/java/com/tecsup/lab13animaciones/fishing/FishingWater.kt`
-- `app/src/main/java/com/tecsup/lab13animaciones/fishing/MissionBoard.kt`
 - `app/src/test/java/com/tecsup/lab13animaciones/fishing/FishingExpansionTest.kt`
-- `app/src/test/java/com/tecsup/lab13animaciones/fishing/FishingLogicTest.kt`
-- `app/src/test/java/com/tecsup/lab13animaciones/fishing/FishingProgressTest.kt`
+- `app/src/test/java/com/tecsup/lab13animaciones/fishing/FishingSessionTest.kt`
 - `app/src/test/java/com/tecsup/lab13animaciones/fishing/FishingSimulationTest.kt`
 - `docs/fishing-legends.md`

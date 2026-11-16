@@ -99,4 +99,28 @@ class FishingNavigationTest {
         org.junit.Assert.assertEquals(50.0,x(),.05)
     }
 
+    @Test fun canPauseResumeAndReturnToBoatWithoutCatch() {
+        compose.mainClock.autoAdvance=false
+        click("Ejercicio Final: Fishing Legends")
+        click("JUGAR · LANZAR LA AVENTURA")
+        compose.onNodeWithText("LANZAR CAÑA").performClick()
+        compose.mainClock.advanceTimeBy(1000)
+        compose.onNodeWithText("DETENER DESCENSO").performClick()
+        compose.mainClock.advanceTimeBy(64)
+        fun depth(): Double = compose.onNodeWithTag("dive-status").fetchSemanticsNode()
+            .config[androidx.compose.ui.semantics.SemanticsProperties.StateDescription]
+            .substringAfter("depth=").toDouble()
+        val stopped=depth()
+        compose.mainClock.advanceTimeBy(1000)
+        org.junit.Assert.assertEquals(stopped,depth(),.001)
+        compose.onNodeWithText("SEGUIR BAJANDO").performClick()
+        compose.mainClock.advanceTimeBy(32)
+        compose.onNodeWithText("RECOGER CAÑA").performClick()
+        compose.mainClock.advanceTimeBy(1000)
+        compose.onNodeWithText("De vuelta al barco · Sin captura").assertIsDisplayed()
+        compose.onNodeWithText("VOLVER AL BARCO").performClick()
+        compose.mainClock.advanceTimeBy(1000)
+        compose.onNodeWithText("FISHING").assertIsDisplayed()
+    }
+
 }

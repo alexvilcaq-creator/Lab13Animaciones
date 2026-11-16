@@ -6,12 +6,13 @@ import kotlin.math.sqrt
 import kotlin.random.Random
 import java.util.UUID
 
-enum class DivePhase { PREPARADO, LANZANDO, DESCENDIENDO, ENGANCHADO, RECOGIENDO, RESULTADO }
+enum class DivePhase { PREPARADO, LANZANDO, DESCENDIENDO, DETENIDO, REGRESANDO_VACIO, ENGANCHADO, RECOGIENDO, RESULTADO }
 data class SwimFish(val id: Int, val fish: Fish, val x: Double, val depth: Double,
                     val velocity: Double, val length: Double, val specimenCm: Int = fish.sizeCm,
                     val anchorDepth: Double = depth, val turnAt: Double = 0.0,
                     val alertUntil: Double = 0.0, val restUntil: Double = 0.0,
-                    val cruiseVelocity: Double = velocity) {
+                    val cruiseVelocity: Double = velocity, val desiredVelocity: Double = velocity,
+                    val reactionAt: Double = 0.0, val flightDirection: Double = 1.0) {
     val depthRadius: Double get() = .35 + length*.04
 }
 data class DiveControls(val left: Boolean = false, val right: Boolean = false, val reel: Boolean = false, val targetX: Double? = null)
@@ -49,10 +50,12 @@ class FishingSimulation(val zone: Zone, val rod: Rod, private val random: Random
             (0 until count).map { n ->
                 val d=fish.min+(bottom-fish.min)*(n+.35)/count
                 val specimen=(fish.sizeCm*random.nextDouble(.8,1.3)).toInt().coerceAtLeast(1)
-                val speed=random.nextDouble(4.0,9.0)*when(fish.behavior) {
-                    FishBehavior.HEAVY -> .55
-                    FishBehavior.FAST -> 1.4
-                    else -> 1.0
+                val speed=when {
+                    fish.special==FishSpecial.GOLD || fish.special==FishSpecial.SECRET -> random.nextDouble(3.5,4.8)
+                    fish.behavior==FishBehavior.HEAVY -> random.nextDouble(1.5,2.5)
+                    fish.rarity==Rarity.COMMON -> random.nextDouble(2.0,3.2)
+                    fish.behavior==FishBehavior.FAST -> random.nextDouble(3.0,4.5)
+                    else -> random.nextDouble(3.0,4.2)
                 }
                 SwimFish(id++,fish,random.nextDouble(5.0,95.0),d,
                     (if(random.nextBoolean())1 else -1)*speed,
@@ -70,6 +73,18 @@ class FishingSimulation(val zone: Zone, val rod: Rod, private val random: Random
         remainder=0.0
         state=state.copy(phase=DivePhase.PREPARADO,hooked=null,catch=null,depth=0.0,tension=0.0,message="Sesión cancelada sin premios")
     }
+    fun pauseDescent() {
+        if(state.phase==DivePhase.DESCENDIENDO) state=state.copy(phase=DivePhase.DETENIDO,message="Descenso detenido")
+    }
+    fun resumeDescent() {
+        if(state.phase==DivePhase.DETENIDO && state.depth<maxDepth)
+            state=state.copy(phase=DivePhase.DESCENDIENDO,message="")
+    }
+    fun recall() {
+        if(state.phase==DivePhase.DESCENDIENDO || state.phase==DivePhase.DETENIDO)
+            state=state.copy(phase=DivePhase.REGRESANDO_VACIO,hooked=null,catch=null,tension=0.0,overload=0.0,
+                message="Recogiendo la caña vacía")
+    }
     fun advance(seconds: Double, controls: DiveControls): DiveState {
         require(seconds.isFinite() && seconds>=0)
         remainder+=seconds
@@ -82,23 +97,25 @@ class FishingSimulation(val zone: Zone, val rod: Rod, private val random: Random
     private fun tick(c: DiveControls) {
         val old=state
         val swimmers=old.fish.map { FishMotion.advance(it,old.x,old.depth,
-            old.phase==DivePhase.DESCENDIENDO,old.time,step,maxDepth) }
+            old.phase==DivePhase.DESCENDIENDO || old.phase==DivePhase.DETENIDO,old.time,step,maxDepth) }
         var s=old.copy(time=old.time+step,fish=swimmers)
         when(old.phase) {
             DivePhase.LANZANDO -> {
                 val t=old.castTime+step
                 s=s.copy(castTime=t,phase=if(t>=.9)DivePhase.DESCENDIENDO else DivePhase.LANZANDO)
             }
-            DivePhase.DESCENDIENDO -> {
+            DivePhase.DESCENDIENDO, DivePhase.DETENIDO -> {
                 val x=moveHook(old.x,c,28.0)
-                val depth=(old.depth+(1.8+sqrt(rod.depth.toDouble())/2)*step).coerceAtMost(maxDepth)
+                val depth=if(old.phase==DivePhase.DETENIDO) old.depth else
+                    (old.depth+(1.8+sqrt(rod.depth.toDouble())/2)*step).coerceAtMost(maxDepth)
                 // Earliest contact wins, including relative fish motion between samples.
                 val contact=swimmers.mapNotNull { f ->
                     val previous=old.fish.first { it.id==f.id }
-                    sweptContact(old.x-previous.x,old.depth-previous.depth,x-f.x,depth-f.depth,f.length*.48+.8,f.depthRadius+.12)
+                    sweptContact(old.x-previous.x,old.depth-previous.depth,x-f.x,depth-f.depth,f.length*.48+1.0,f.depthRadius+.18)
                         ?.let { Triple(it,f,previous) }
                 }.minByOrNull { it.first }
-                s=s.copy(x=x,depth=depth,deepest=maxOf(old.deepest,depth))
+                s=s.copy(x=x,depth=depth,deepest=maxOf(old.deepest,depth),
+                    phase=if(depth>=maxDepth)DivePhase.DETENIDO else old.phase)
                 if(contact!=null) {
                     val (t,f,previous)=contact
                     val atDepth=old.depth+(depth-old.depth)*t
@@ -107,6 +124,11 @@ class FishingSimulation(val zone: Zone, val rod: Rod, private val random: Random
                     s=s.copy(phase=DivePhase.ENGANCHADO,x=atX,depth=atDepth,hookDepth=atDepth,hooked=hooked,
                         fish=swimmers.filter { it.id!=f.id },tension=.2)
                 }
+            }
+            DivePhase.REGRESANDO_VACIO -> {
+                val depth=(old.depth-(3.0+rod.depth/9.0)*rod.reelSpeed*step).coerceAtLeast(0.0)
+                s=s.copy(x=moveHook(old.x,c,28.0),depth=depth)
+                if(depth<=0) s=s.copy(phase=DivePhase.RESULTADO,message="De vuelta al barco · Sin captura",catch=null)
             }
             DivePhase.ENGANCHADO, DivePhase.RECOGIENDO -> {
                 val f=old.hooked ?: return
@@ -118,7 +140,9 @@ class FishingSimulation(val zone: Zone, val rod: Rod, private val random: Random
                 val x=(guided+sin(old.time*4)*resistance*15*step).coerceIn(2.0,98.0)
                 s=s.copy(phase=if(c.reel)DivePhase.RECOGIENDO else DivePhase.ENGANCHADO,
                     x=x,depth=depth,deepest=maxOf(old.deepest,depth),tension=tension,overload=overload,hooked=f.copy(x=x,depth=depth))
-                if(overload>=1.2) s=s.copy(phase=DivePhase.RESULTADO,message="El hilo cedió. El pez escapó.",catch=null)
+                if(overload>=1.2) s=s.copy(phase=DivePhase.DETENIDO,
+                    message="${f.fish.name} escapó. Puedes explorar o recoger la caña vacía.",
+                    hooked=null,catch=null,tension=0.0,overload=0.0)
                 else if(depth<=0 && c.reel) s=s.copy(phase=DivePhase.RESULTADO,message="¡Captura en superficie!",
                     catch=Catch(old.session,f.fish,old.hookDepth.toInt().coerceAtLeast(f.fish.min),
                         f.specimenCm))
