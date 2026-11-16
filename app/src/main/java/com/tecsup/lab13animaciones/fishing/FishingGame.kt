@@ -91,8 +91,8 @@ import kotlin.random.Random
         }
         Column(Modifier.padding(horizontal=24.dp)) {
             Text("UN LANCE. MIL HISTORIAS.",color=Mint,fontSize=10.sp,letterSpacing=3.sp)
-            Text("FISHING",color=Cream,fontSize=42.sp,fontWeight=FontWeight.Black,letterSpacing=3.sp)
-            Text("LEGENDS",color=Gold,fontSize=42.sp,fontWeight=FontWeight.Black,letterSpacing=3.sp)
+            Text("FISHING",color=Cream,fontSize=42.sp,lineHeight=50.sp,fontWeight=FontWeight.Black,letterSpacing=3.sp)
+            Text("LEGENDS",color=Gold,fontSize=42.sp,lineHeight=50.sp,fontWeight=FontWeight.Black,letterSpacing=3.sp)
         }
         FishingScene(zone,progress.rod,FishingPhase.IDLE,0f,0f,0f,null,Modifier.fillMaxWidth().height(290.dp))
         Column(Modifier.padding(24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
@@ -167,7 +167,7 @@ import kotlin.random.Random
             Text("${(depth*descent.value*(1f-reel.value)).toInt()} m / ${progress.rod.depth} m",
                 Modifier.align(Alignment.TopEnd).padding(12.dp).background(Night.copy(.8f),MaterialTheme.shapes.medium).padding(8.dp),color=Cream,fontSize=12.sp)
             androidx.compose.animation.AnimatedVisibility(visible=phase==FishingPhase.BITE,modifier=Modifier.align(Alignment.Center)) {
-                Text("¡PICADA!",Modifier.background(Gold,MaterialTheme.shapes.large).padding(horizontal=24.dp,vertical=statusSize),color=Night,fontWeight=FontWeight.Black,fontSize=24.sp)
+                Text("¡PICADA!",Modifier.background(Gold,MaterialTheme.shapes.large).padding(horizontal=24.dp,vertical=statusSize),color=Night,fontWeight=FontWeight.Black,fontSize=24.sp,lineHeight=32.sp)
             }
         }
         Column(Modifier.fillMaxWidth().heightIn(max=340.dp).verticalScroll(rememberScrollState()).padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
@@ -201,7 +201,7 @@ import kotlin.random.Random
                             Row(verticalAlignment=Alignment.CenterVertically) {
                                 FishArt(fish.fish,Modifier.size(120.dp,85.dp))
                                 Column(Modifier.weight(1f)) {
-                                    Text(fish.fish.name,color=Cream,fontWeight=FontWeight.Bold,fontSize=21.sp)
+                                    Text(fish.fish.name,color=Cream,fontWeight=FontWeight.Bold,fontSize=21.sp,lineHeight=28.sp)
                                     Text("${fish.fish.rarity.title} · ${fish.sizeCm} cm",color=rarityColor(fish.fish.rarity))
                                     Text("${fish.depth} m · +${fish.fish.value} monedas",color=Gold)
                                 }
@@ -211,7 +211,7 @@ import kotlin.random.Random
                             TextButton(onClick=collection) { Text("VER COLECCIÓN",color=Gold) }
                         }
                         FishingPhase.ESCAPED -> {
-                            Text("Se escapó…",color=accent,fontWeight=FontWeight.Bold,fontSize=24.sp)
+                            Text("Se escapó…",color=accent,fontWeight=FontWeight.Bold,fontSize=24.sp,lineHeight=32.sp)
                             Text("Espera a que la marca entre en la franja dorada. ¡Otro lance!",color=Mint)
                             GameButton("VOLVER A LANZAR",Modifier.fillMaxWidth()) { reset() }
                         }

@@ -20,6 +20,12 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.ui.platform.testTag
+import com.tecsup.lab13animaciones.ui.theme.Lab13AnimacionesTheme
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -37,8 +43,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            MaterialTheme {
-                AppLaboratorio()
+            Lab13AnimacionesTheme(darkTheme = false, dynamicColor = false) {
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    AppLaboratorio()
+                }
             }
         }
     }
@@ -76,46 +84,50 @@ fun MenuPrincipal(
     abrirEjercicio4: () -> Unit,
     abrirFishing: () -> Unit
 ) {
+    val entries = listOf(
+        Triple("Ejercicio 1: AnimatedVisibility", "Mostrar y ocultar elementos", abrirEjercicio1),
+        Triple("Ejercicio 2: animateColorAsState", "Explorar transiciones de color", abrirEjercicio2),
+        Triple("Ejercicio 3: Tamaño y Posicion", "Animar dimensiones y desplazamiento", abrirEjercicio3),
+        Triple("Ejercicio 4: AnimatedContent", "Cambiar contenido con transiciones", abrirEjercicio4),
+        Triple("Ejercicio Final: Fishing Legends", "Jugar, explorar y coleccionar peces", abrirFishing)
+    )
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .safeDrawingPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        modifier = Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = "Laboratorio 13: Animaciones",
-            fontSize = 24.sp
-        )
-
-        Spacer(modifier = Modifier.height(30.dp))
-
-        Button(onClick = abrirEjercicio1) {
-            Text("Ejercicio 1: AnimatedVisibility")
+        Column(Modifier.widthIn(max = 560.dp).fillMaxWidth().padding(vertical = 20.dp)) {
+            Text("LABORATORIO 13", style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary)
+            Text("Laboratorio 13: Animaciones", style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(top = 8.dp))
+            Text("Selecciona un ejercicio para comenzar.", style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(top = 8.dp))
         }
-
-        Spacer(modifier = Modifier.height(15.dp))
-
-        Button(onClick = abrirEjercicio2) {
-            Text("Ejercicio 2: animateColorAsState")
-        }
-
-        Spacer(modifier = Modifier.height(15.dp))
-
-        Button(onClick = abrirEjercicio3) {
-            Text("Ejercicio 3: Tamaño y Posicion")
-        }
-
-        Spacer(modifier = Modifier.height(15.dp))
-
-        Button(onClick = abrirEjercicio4) {
-            Text("Ejercicio 4: AnimatedContent")
-        }
-        Spacer(modifier = Modifier.height(15.dp))
-        Button(onClick = abrirFishing) {
-            Text("Ejercicio Final: Fishing Legends")
+        LazyColumn(
+            modifier = Modifier.widthIn(max = 560.dp).fillMaxWidth().weight(1f).testTag("lab-menu"),
+            contentPadding = PaddingValues(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(entries.indices.toList(), key = { it }) { index ->
+                val (title, description, open) = entries[index]
+                Button(
+                    onClick = open,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 88.dp)
+                        .testTag("lab-destination-${index + 1}"),
+                    shape = RoundedCornerShape(18.dp),
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (index == 4) Color(0xFF176B63) else Color(0xFF354A78)
+                    )
+                ) {
+                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(title, style = MaterialTheme.typography.titleMedium,
+                            fontSize = 17.sp, lineHeight = 24.sp)
+                        Text(description, style = MaterialTheme.typography.bodyMedium,
+                            fontSize = 14.sp, lineHeight = 20.sp)
+                    }
+                }
+            }
         }
     }
 }
@@ -128,13 +140,16 @@ fun Ejercicio1(volver: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .safeDrawingPadding()
+            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Text(
             text = "Ejercicio 1: AnimatedVisibility",
-            fontSize = 22.sp
+            fontSize = 22.sp,
+            lineHeight = 30.sp
         )
 
         Spacer(modifier = Modifier.height(30.dp))
@@ -165,7 +180,7 @@ fun Ejercicio1(volver: () -> Unit) {
 
         Spacer(modifier = Modifier.height(30.dp))
 
-        Button(onClick = volver) {
+        Button(onClick = volver, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
             Text("Volver al menu")
         }
     }
@@ -190,13 +205,16 @@ fun Ejercicio2(volver: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .safeDrawingPadding()
+            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Text(
             text = "Ejercicio 2: Cambio de Color",
-            fontSize = 22.sp
+            fontSize = 22.sp,
+            lineHeight = 30.sp
         )
 
         Spacer(modifier = Modifier.height(30.dp))
@@ -230,7 +248,7 @@ fun Ejercicio2(volver: () -> Unit) {
 
         Spacer(modifier = Modifier.height(30.dp))
 
-        Button(onClick = volver) {
+        Button(onClick = volver, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
             Text("Volver al menu")
         }
     }
@@ -256,13 +274,16 @@ fun Ejercicio3(volver: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .safeDrawingPadding()
+            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Text(
             text = "Ejercicio 3: Tamaño y Posicion",
-            fontSize = 22.sp
+            fontSize = 22.sp,
+            lineHeight = 30.sp
         )
 
         Spacer(modifier = Modifier.height(30.dp))
@@ -295,7 +316,7 @@ fun Ejercicio3(volver: () -> Unit) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        Button(onClick = volver) {
+        Button(onClick = volver, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
             Text("Volver al menu")
         }
     }
@@ -309,13 +330,16 @@ fun Ejercicio4(volver: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .safeDrawingPadding()
+            .verticalScroll(rememberScrollState())
             .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Text(
             text = "Ejercicio 4: AnimatedContent",
-            fontSize = 22.sp
+            fontSize = 22.sp,
+            lineHeight = 30.sp
         )
 
         Spacer(modifier = Modifier.height(30.dp))
@@ -358,6 +382,7 @@ fun Ejercicio4(volver: () -> Unit) {
                     text = mensaje,
                     color = Color.White,
                     fontSize = 20.sp,
+                    lineHeight = 28.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -392,7 +417,7 @@ fun Ejercicio4(volver: () -> Unit) {
 
         Spacer(modifier = Modifier.height(25.dp))
 
-        Button(onClick = volver) {
+        Button(onClick = volver, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
             Text("Volver al menu")
         }
     }

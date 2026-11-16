@@ -12,6 +12,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -24,10 +25,12 @@ fun rarityColor(rarity: Rarity) = when(rarity) {
     Rarity.RARE -> Color(0xFFD1ADFA); Rarity.LEGENDARY -> Gold
 }
 @Composable fun GameButton(text: String, modifier: Modifier = Modifier, enabled: Boolean = true, secondary: Boolean = false, onClick: () -> Unit) {
-    Button(onClick,modifier.heightIn(min=50.dp),enabled=enabled,shape=RoundedCornerShape(16.dp),
+    Button(onClick=onClick, modifier=modifier.heightIn(min=56.dp), enabled=enabled, shape=RoundedCornerShape(16.dp),
+        contentPadding=PaddingValues(horizontal=16.dp, vertical=14.dp),
         colors=ButtonDefaults.buttonColors(containerColor=if(secondary)Color(0xFF315561) else Gold,
             contentColor=if(secondary)Cream else Night)) {
-        Text(text,fontWeight=FontWeight.Bold,letterSpacing=.5.sp)
+        Text(text,style=MaterialTheme.typography.labelLarge,fontSize=16.sp,lineHeight=22.sp,
+            textAlign=TextAlign.Center,fontWeight=FontWeight.Bold,letterSpacing=0.sp)
     }
 }
 @Composable fun GameCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
@@ -35,7 +38,7 @@ fun rarityColor(rarity: Rarity) = when(rarity) {
 }
 @Composable fun TitleBlock(eyebrow: String, title: String, subtitle: String) {
     Text(eyebrow.uppercase(),color=Gold,fontSize=11.sp,letterSpacing=3.sp,fontWeight=FontWeight.Bold)
-    Text(title,color=Cream,fontSize=28.sp,fontWeight=FontWeight.Black)
+    Text(title,color=Cream,fontSize=28.sp,lineHeight=36.sp,fontWeight=FontWeight.Black)
     Text(subtitle,color=Mint,fontSize=13.sp)
 }
 @Composable fun RodArt(rod: Rod, modifier: Modifier = Modifier) {
@@ -50,11 +53,11 @@ fun rarityColor(rarity: Rarity) = when(rarity) {
     }
 }
 @Composable fun Stat(label: String, value: String, modifier: Modifier = Modifier) {
-    Column(modifier) { Text(value,color=Cream,fontWeight=FontWeight.Bold,fontSize=20.sp); Text(label,color=Mint,fontSize=11.sp) }
+    Column(modifier) { Text(value,color=Cream,fontWeight=FontWeight.Bold,fontSize=20.sp,lineHeight=28.sp); Text(label,color=Mint,fontSize=11.sp) }
 }
 @Composable fun PageHeader(title: String, back: () -> Unit) {
     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
         TextButton(onClick=back) { Text("‹ Volver",color=Gold) }
-        Text(title,color=Cream,fontWeight=FontWeight.Bold,fontSize=19.sp)
+        Text(title,color=Cream,fontWeight=FontWeight.Bold,fontSize=19.sp,lineHeight=26.sp,modifier=Modifier.weight(1f))
     }
 }
