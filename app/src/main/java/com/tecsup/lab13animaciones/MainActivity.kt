@@ -2,6 +2,10 @@
 package com.tecsup.lab13animaciones
 
 import android.os.Bundle
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.tecsup.lab13animaciones.fishing.FishingGame
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedContent
@@ -20,6 +24,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,20 +47,23 @@ class MainActivity : ComponentActivity() {
 // MENU PRINCIPAL
 @Composable
 fun AppLaboratorio() {
-    var pantalla by remember { mutableIntStateOf(0) }
+    var pantalla by rememberSaveable { mutableIntStateOf(0) }
 
+    BackHandler(enabled = pantalla in 1..4) { pantalla = 0 }
     when (pantalla) {
         0 -> MenuPrincipal(
             abrirEjercicio1 = { pantalla = 1 },
             abrirEjercicio2 = { pantalla = 2 },
             abrirEjercicio3 = { pantalla = 3 },
-            abrirEjercicio4 = { pantalla = 4 }
+            abrirEjercicio4 = { pantalla = 4 },
+            abrirFishing = { pantalla = 5 }
         )
 
         1 -> Ejercicio1(volver = { pantalla = 0 })
         2 -> Ejercicio2(volver = { pantalla = 0 })
         3 -> Ejercicio3(volver = { pantalla = 0 })
         4 -> Ejercicio4(volver = { pantalla = 0 })
+        5 -> FishingGame(onExit = { pantalla = 0 })
     }
 }
 
@@ -65,11 +73,14 @@ fun MenuPrincipal(
     abrirEjercicio1: () -> Unit,
     abrirEjercicio2: () -> Unit,
     abrirEjercicio3: () -> Unit,
-    abrirEjercicio4: () -> Unit
+    abrirEjercicio4: () -> Unit,
+    abrirFishing: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .safeDrawingPadding()
+            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -82,13 +93,13 @@ fun MenuPrincipal(
         Spacer(modifier = Modifier.height(30.dp))
 
         Button(onClick = abrirEjercicio1) {
-            Text("Ejercicio 1: Visibilidad")
+            Text("Ejercicio 1: AnimatedVisibility")
         }
 
         Spacer(modifier = Modifier.height(15.dp))
 
         Button(onClick = abrirEjercicio2) {
-            Text("Ejercicio 2: Cambio de Color")
+            Text("Ejercicio 2: animateColorAsState")
         }
 
         Spacer(modifier = Modifier.height(15.dp))
@@ -100,7 +111,11 @@ fun MenuPrincipal(
         Spacer(modifier = Modifier.height(15.dp))
 
         Button(onClick = abrirEjercicio4) {
-            Text("Ejercicio 4: Cambio de Contenido")
+            Text("Ejercicio 4: AnimatedContent")
+        }
+        Spacer(modifier = Modifier.height(15.dp))
+        Button(onClick = abrirFishing) {
+            Text("Ejercicio Final: Fishing Legends")
         }
     }
 }
